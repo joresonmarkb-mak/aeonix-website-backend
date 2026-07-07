@@ -43,7 +43,12 @@ const orderSchema = new mongoose.Schema(
     },
     isPaid: {
       type: Boolean,
-      default: false,
+     
+    },
+    paymentMethod: {
+      type: String,
+      enum: ['Cash on Delivery', 'Credit/Debit Card'],
+      default: 'Cash on Delivery',
     },
     paidAt: Date,
     deliveredAt: Date,

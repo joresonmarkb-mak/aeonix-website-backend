@@ -31,7 +31,11 @@ const productSchema = new mongoose.Schema({
         type:Number, 
         required: true,
         min: [0,'Stock cannot be negative']},
-      isFeatured: {
+    isFeatured: {
+      type: Boolean,
+      default: false,
+    },
+    isNewArrival: {
       type: Boolean,
       default: false,
     },
@@ -43,7 +47,7 @@ const productSchema = new mongoose.Schema({
     waterResistance: String,
     crystal: String,
     },
-    conditionNote: {
+    condition: {
         type: String,
         default: '',
     },

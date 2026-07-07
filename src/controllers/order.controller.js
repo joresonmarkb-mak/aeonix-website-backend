@@ -6,16 +6,15 @@ import Product from '../model/product.model.js';
 // @access  Private
 export const createOrder = async (req, res) => {
   try {
-    const { items, shippingAddress } = req.body;
- 
+    const { items, shippingAddress, paymentMethod } = req.body;
+
     if (!items || items.length === 0) {
       return res.status(400).json({ message: 'No items in order' });
     }
- 
-    // Validate products and build order items with price snapshots
+
     const orderItems = [];
     let totalAmount = 0;
- 
+
     for (const item of items) {
       const product = await Product.findById(item.product);
       if (!product) {
@@ -24,7 +23,7 @@ export const createOrder = async (req, res) => {
       if (product.stock < item.quantity) {
         return res.status(400).json({ message: `Insufficient stock for: ${product.name}` });
       }
- 
+
       orderItems.push({
         product: product._id,
         name: product.name,
@@ -32,21 +31,23 @@ export const createOrder = async (req, res) => {
         price: product.price,
         quantity: item.quantity,
       });
- 
+
       totalAmount += product.price * item.quantity;
- 
-      // Deduct stock
       product.stock -= item.quantity;
       await product.save();
     }
- 
+
     const order = await Order.create({
       user: req.user.id,
       items: orderItems,
       shippingAddress,
       totalAmount,
+      paymentMethod: paymentMethod === 'card' ? 'Credit/Debit Card' : 'Cash on Delivery',
+      isPaid: paymentMethod === 'card',       // ← true if card
+      paidAt: paymentMethod === 'card' ? Date.now() : null,
+      status: paymentMethod === 'card' ? 'Processing' : 'Pending', // ← auto Processing if paid
     });
- 
+
     res.status(201).json(order);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -112,7 +113,15 @@ export const updateOrderStatus = async (req, res) => {
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     order.status = status;
-    if (status === 'Delivered') order.deliveredAt = Date.now();
+
+    if (status === 'Delivered') {
+      order.deliveredAt = Date.now();
+      // Auto mark as paid on delivery
+      if (!order.isPaid) {
+        order.isPaid = true;
+        order.paidAt = Date.now();
+      }
+    }
 
     const updated = await order.save();
     res.json(updated);
