@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema(
         country: { type: String, default: 'Philippines' },
       },
     ],
+    avatar: {
+        type: String,
+        default: null,
+    },
   },
   { timestamps: true }
 );

@@ -7,6 +7,7 @@ import productRoutes from './routes/product.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import reviewRoutes from './routes/review.routes.js';
+import messageRoutes from './routes/message.routes.js';
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/messages', messageRoutes);
 // Health check
 app.get('/', (req, res) => res.json({ message: 'Watch Store API running' }));
 
