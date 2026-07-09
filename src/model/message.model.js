@@ -22,6 +22,10 @@ const messageSchema = new moongoose.Schema({
         type: Boolean,
         default: false,
     },
+    isRead: {
+        type: Boolean,
+        default: false,
+    },
 }, { timestamps: true });
 
 export default moongoose.model('Message', messageSchema);

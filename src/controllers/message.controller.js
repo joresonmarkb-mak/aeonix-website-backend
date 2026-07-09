@@ -20,11 +20,33 @@ export const getAllMessages = async (req, res) => {
     res.status(500).json({ message: err.message });
   };}
 
-  export const updateMessageStatus = async (req, res) => {
+  export const updateMessageIsRead = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { isRead } = req.body;
     const message = await Message.findById(req.params.id);
     if (!message) return res.status(404).json({ message: 'Message not found' });
-  }catch (err) {    
-    res.status(500).json({ message: err.message });}};
+    message.isRead = isRead;
+    await message.save();
+    res.json(message);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const updateMessageResponse = async (req, res) => {
+  try {
+    const { response } = req.body;
+    const message = await Message.findById(req.params.id);
+    if (!message) return res.status(404).json({ message: 'Message not found' });
+    message.response = response;
+    await message.save();
+    res.json(message);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+ 
+
 
