@@ -34,6 +34,7 @@ app.use('/api/auth', authLimiter);
 // Middleware
 app.use(cors({ origin: ['http://localhost:5173', process.env.CLIENT_URL], credentials: true }));
 
+
 // Only parse JSON if content-type is application/json (skip multipart)
 app.use((req, res, next) => {
   const contentType = req.headers['content-type'] || '';
