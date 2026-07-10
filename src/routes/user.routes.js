@@ -10,6 +10,7 @@ import {
   firebaseRegister
 } from '../controllers/user.controller.js';
 import { protect, adminOnly } from '../middleware/auth.js';
+import { upload } from '../config/cloudinary.js';
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.post('/firebase-register', firebaseRegister);
 // Private
 router.get('/me', protect, getMe);
 router.put('/me', protect, updateMe);
+router.put('/me', protect, upload.single('avatar'), updateMe);
 
 // Admin
 router.get('/', protect, adminOnly, getAllUsers);

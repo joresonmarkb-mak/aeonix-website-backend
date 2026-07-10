@@ -2,15 +2,38 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
-
 import userRoutes from './routes/user.routes.js';
 import productRoutes from './routes/product.routes.js';
 import orderRoutes from './routes/order.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
+import reviewRoutes from './routes/review.routes.js';
+import messageRoutes from './routes/message.routes.js';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 
+
+app.use(helmet());
+
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { message: 'Too many requests, please try again later.' },
+});
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: 'Too many login attempts, please try again later.' },
+});
+app.use(limiter);
+app.use('/api/auth', authLimiter);
+
 // Middleware
 app.use(cors({ origin: ['http://localhost:5173', process.env.CLIENT_URL], credentials: true }));
+
 
 // Only parse JSON if content-type is application/json (skip multipart)
 app.use((req, res, next) => {
@@ -24,7 +47,9 @@ app.use('/api/auth', userRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
-
+app.use('/api/payment', paymentRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/messages', messageRoutes);
 // Health check
 app.get('/', (req, res) => res.json({ message: 'Watch Store API running' }));
 

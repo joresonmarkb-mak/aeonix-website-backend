@@ -100,30 +100,7 @@ export const getMe = async (req, res) => {
 // @desc    Update user profile
 // @route   PUT /api/auth/me
 // @access  Private
-export const updateMe = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    user.name = req.body.name || user.name;
-    user.email = req.body.email || user.email;
-    user.phone = req.body.phone || user.phone;
-    
-
-    if (req.body.password) user.password = req.body.password;
-
-    const updated = await user.save();
-    res.json({
-      _id: updated._id,
-      name: updated.name,
-      email: updated.email,
-      phone: updated.phone,
-      role: updated.role,
-    });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
 
 // ── Admin only ──────────────────────────────────────────────
 
@@ -149,6 +126,40 @@ export const deleteUser = async (req, res) => {
 
     await user.deleteOne();
     res.json({ message: 'User deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+export const updateMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.name = req.body.name || user.name;
+    user.phone = req.body.phone || user.phone;
+    if (req.body.password) user.password = req.body.password;
+
+    // Update shipping address
+    if (req.body['shippingAddress[street]']) {
+      user.shippingAddresses = [{
+        street: req.body['shippingAddress[street]'],
+        city: req.body['shippingAddress[city]'],
+        province: req.body['shippingAddress[province]'],
+        postalCode: req.body['shippingAddress[postalCode]'],
+        country: req.body['shippingAddress[country]'] || 'Philippines',
+      }];
+    }
+
+    // Upload avatar to Cloudinary
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer, 'aeonix/avatars');
+      user.avatar = result.secure_url;
+    }
+
+    const updated = await user.save();
+    res.json({ _id: updated._id, name: updated.name, email: updated.email, phone: updated.phone, role: updated.role, avatar: updated.avatar });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

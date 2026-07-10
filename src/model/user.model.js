@@ -23,6 +23,7 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: ['customer', 'admin'],
+      default: 'customer',
       
     },
     phone: {
@@ -40,6 +41,10 @@ const userSchema = new mongoose.Schema(
         country: { type: String, default: 'Philippines' },
       },
     ],
+    avatar: {
+        type: String,
+        default: null,
+    },
   },
   { timestamps: true }
 );
