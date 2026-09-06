@@ -52,8 +52,26 @@ const orderSchema = new mongoose.Schema(
     },
     paidAt: Date,
     deliveredAt: Date,
+    // Add these fields to your existing Order model schema:
+
+    channel: {
+      type: String,
+      enum: ['FB Marketplace', 'Meetups', 'Carousell', 'FB Group Post', 'FB Page', 'Website', 'Other'],
+      default: 'Website',
+    },
+    notes: {
+      type: String,
+      default: '',
+    },
+    isManualSale: {
+      type: Boolean,
+      default: false,
+    },
   },
+  
   { timestamps: true }
+
+  
 );
 
 export default mongoose.model('Order', orderSchema);

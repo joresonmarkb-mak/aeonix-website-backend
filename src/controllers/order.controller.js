@@ -147,3 +147,64 @@ export const markOrderAsPaid = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+export const createManualOrder = async (req, res) => {
+  try {
+    const {
+      productId,
+      productName,
+      productImage,
+      finalPrice,
+      buyerName,
+      buyerPhone,
+      shippingAddress,
+      channel,
+      notes,
+    } = req.body;
+ 
+    // Find or create a guest user for the buyer
+    let buyer = await User.findOne({ name: buyerName, phone: buyerPhone });
+    if (!buyer) {
+      buyer = await User.create({
+        name: buyerName,
+        email: `${buyerName.toLowerCase().replace(/\s+/g, '.')}${Date.now()}@manual.aeonix`,
+        phone: buyerPhone || null,
+        password: Math.random().toString(36),
+        role: 'customer',
+      });
+    }
+ 
+    // Get product and deduct stock
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (product.stock < 1) return res.status(400).json({ message: 'Product out of stock' });
+ 
+    product.stock -= 1;
+    await product.save();
+ 
+    // Create order
+    const order = await Order.create({
+      user: buyer._id,
+      items: [{
+        product: product._id,
+        name: productName || product.name,
+        image: productImage || product.images?.[0] || '',
+        price: finalPrice,
+        quantity: 1,
+      }],
+      shippingAddress,
+      totalAmount: finalPrice,
+      paymentMethod: 'Cash on Delivery',
+      isPaid: true,
+      paidAt: Date.now(),
+      status: 'Delivered',
+      deliveredAt: Date.now(),
+      channel: channel || 'Other',
+      notes: notes || '',
+      isManualSale: true,
+    });
+ 
+    res.status(201).json(order);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
