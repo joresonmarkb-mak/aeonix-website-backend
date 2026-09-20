@@ -29,3 +29,16 @@ export const adminOnly = (req, res, next) => {
   }
   next();
 };
+
+// @desc  Attach user if token exists, but don't block if missing
+export const optionalProtect = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_PASSWORD);
+      req.user = await User.findById(decoded.id).select('-password');
+    }
+  } catch { }
+  next();
+};

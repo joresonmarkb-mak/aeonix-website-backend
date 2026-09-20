@@ -6,6 +6,7 @@ import {
   getAllOrders,
   updateOrderStatus,
   markOrderAsPaid,
+  createManualOrder
 } from '../controllers/order.controller.js';
 import { protect, adminOnly } from '../middleware/auth.js';
 
@@ -20,5 +21,6 @@ router.get('/:id', protect, getOrderById);
 router.get('/', protect, adminOnly, getAllOrders);
 router.put('/:id/status', protect, adminOnly, updateOrderStatus);
 router.put('/:id/pay', protect, adminOnly, markOrderAsPaid);
+router.post('/manual', protect, adminOnly, createManualOrder);
 
 export default router;

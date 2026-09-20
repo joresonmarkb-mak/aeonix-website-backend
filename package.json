@@ -27,6 +27,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.0",
     "multer": "^2.2.0",
+    "nodemailer": "^10.0.10",
+    "react-google-recaptcha": "^3.1.0",
     "stripe": "^22.3.0"
   },
   "devDependencies": {

@@ -11,6 +11,8 @@ import messageRoutes from './routes/message.routes.js';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import subscriberRoutes from './routes/subscriberRoutes.js';
+import testimonialRoutes from './routes/testimonialroutes.js';
 
 const app = express();
 
@@ -67,6 +69,8 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/subscribers', subscriberRoutes);
+app.use('/api/testimonials', testimonialRoutes);
 
 // Health check
 app.get('/', (req, res) => res.json({ message: 'Watch Store API running' }));

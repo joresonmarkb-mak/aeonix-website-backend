@@ -73,39 +73,118 @@ export const getMonthlyPerformance = async (req, res) => {
 export const getInventorySummary = async (req, res) => {
   try {
     const products = await Product.find().select(
-      'name brand price costPrice stock condition category images'
+      'name brand price costPrice stock condition category image'
     );
-    console.log('first product image:', products[0]?.image); 
 
     const inventory = products.map(p => {
-  const cost = p.costPrice || 0;
-  const margin = p.price > 0 ? ((p.price - cost) / p.price * 100).toFixed(1) : 0;
-  const profit = p.price - cost;
-  const totalInventoryValue = p.stock * p.price;
-  const totalCostValue = p.stock * cost;
+      const cost = p.costPrice || 0;
+      const margin = p.price > 0 ? ((p.price - cost) / p.price * 100).toFixed(1) : 0;
+      const profit = p.price - cost;
+      const totalInventoryValue = p.stock * p.price;
+      const totalCostValue = p.stock * cost;
 
-  return {
-    _id: p._id,
-    name: p.name,
-    brand: p.brand,
-    image: p.images?.[0]?.replace(/"/g, '') || '', // ← fix here
-    condition: p.condition,
-    category: p.category,
-    stock: p.stock,
-    costPrice: cost,
-    sellingPrice: p.price,
-    profit,
-    margin: Number(margin),
-    totalInventoryValue,
-    totalCostValue,
-  };
-});
+      return {
+        _id: p._id,
+        name: p.name,
+        brand: p.brand,
+        image: p.image?.[0]?.replace(/"/g, '') || '',
+        condition: p.condition,
+        category: p.category,
+        stock: p.stock,
+        costPrice: cost,
+        sellingPrice: p.price,
+        profit,
+        margin: Number(margin),
+        totalInventoryValue,
+        totalCostValue,
+      };
+    });
 
     const totalInventoryValue = inventory.reduce((s, p) => s + p.totalInventoryValue, 0);
     const totalCostValue = inventory.reduce((s, p) => s + p.totalCostValue, 0);
     const totalPotentialProfit = totalInventoryValue - totalCostValue;
 
     res.json({ inventory, totalInventoryValue, totalCostValue, totalPotentialProfit });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Get best selling products by category
+// @route   GET /api/analytics/best-by-category
+// @access  Admin
+export const getBestByCategory = async (req, res) => {
+  try {
+    const orders = await Order.find({ status: { $ne: 'Cancelled' } })
+      .populate('items.product', 'name images category brand');
+
+    // Build category → products map
+    const categoryMap = {};
+
+    for (const order of orders) {
+      for (const item of order.items) {
+        const category = item.product?.category || 'Unknown';
+        const id = item.product?._id?.toString();
+        if (!id) continue;
+
+        if (!categoryMap[category]) categoryMap[category] = {};
+        if (!categoryMap[category][id]) {
+          categoryMap[category][id] = {
+            _id: id,
+            name: item.name || item.product?.name,
+            image: (item.image || item.product?.images?.[0] || '').replace(/"/g, ''),
+            brand: item.product?.brand || '',
+            category,
+            count: 0,
+          };
+        }
+        categoryMap[category][id].count += item.quantity;
+      }
+    }
+
+    // Sort each category by count, keep top 3
+    const result = Object.entries(categoryMap).map(([category, products]) => ({
+      category,
+      topProducts: Object.values(products)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3),
+      totalSold: Object.values(products).reduce((s, p) => s + p.count, 0),
+    })).sort((a, b) => b.totalSold - a.totalSold);
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Get sales by channel
+// @route   GET /api/analytics/channels
+// @access  Admin
+export const getSalesByChannel = async (req, res) => {
+  try {
+    const orders = await Order.find({ status: { $ne: 'Cancelled' } });
+
+    const channelMap = {};
+    let total = 0;
+
+    for (const order of orders) {
+      const channel = order.channel || 'Website';
+      if (!channelMap[channel]) channelMap[channel] = { count: 0, revenue: 0 };
+      channelMap[channel].count += 1;
+      channelMap[channel].revenue += order.totalAmount;
+      total += 1;
+    }
+
+    const result = Object.entries(channelMap)
+      .map(([channel, data]) => ({
+        channel,
+        count: data.count,
+        revenue: data.revenue,
+        percentage: total > 0 ? Number((data.count / total * 100).toFixed(1)) : 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    res.json({ channels: result, total });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

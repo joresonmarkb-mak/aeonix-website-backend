@@ -1,5 +1,6 @@
 import Order from '../model/order.model.js';
 import Product from '../model/product.model.js';
+import User from '../model/user.model.js';
 
 // @desc    Create a new order
 // @route   POST /api/orders
@@ -160,27 +161,37 @@ export const createManualOrder = async (req, res) => {
       channel,
       notes,
     } = req.body;
- 
-    // Find or create a guest user for the buyer
-    let buyer = await User.findOne({ name: buyerName, phone: buyerPhone });
+
+    // Find existing user by phone or create a manual guest
+    let buyer = await User.findOne({ 
+      $or: [
+        { phone: buyerPhone, phone: { $ne: null } },
+        { name: buyerName }
+      ]
+    });
+
     if (!buyer) {
-      buyer = await User.create({
+      // Create a guest account — no strict validation needed
+      const guestEmail = `guest.${Date.now()}.${Math.random().toString(36).slice(2)}@manual.aeonix.com`;
+      buyer = new User({
         name: buyerName,
-        email: `${buyerName.toLowerCase().replace(/\s+/g, '.')}${Date.now()}@manual.aeonix`,
+        email: guestEmail,
         phone: buyerPhone || null,
-        password: Math.random().toString(36),
+        password: `ManualSale${Date.now()}!`,  // meets min length
         role: 'customer',
       });
+      await buyer.save();
     }
- 
+
     // Get product and deduct stock
     const product = await Product.findById(productId);
     if (!product) return res.status(404).json({ message: 'Product not found' });
     if (product.stock < 1) return res.status(400).json({ message: 'Product out of stock' });
- 
+
     product.stock -= 1;
+    product.status = 'Sold';
     await product.save();
- 
+
     // Create order
     const order = await Order.create({
       user: buyer._id,
@@ -188,11 +199,11 @@ export const createManualOrder = async (req, res) => {
         product: product._id,
         name: productName || product.name,
         image: productImage || product.images?.[0] || '',
-        price: finalPrice,
+        price: Number(finalPrice),
         quantity: 1,
       }],
       shippingAddress,
-      totalAmount: finalPrice,
+      totalAmount: Number(finalPrice),
       paymentMethod: 'Cash on Delivery',
       isPaid: true,
       paidAt: Date.now(),
@@ -202,7 +213,7 @@ export const createManualOrder = async (req, res) => {
       notes: notes || '',
       isManualSale: true,
     });
- 
+
     res.status(201).json(order);
   } catch (err) {
     res.status(500).json({ message: err.message });
