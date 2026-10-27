@@ -1,5 +1,6 @@
 import Order from '../model/order.model.js';
 import Product from '../model/product.model.js';
+import User from '../model/user.model.js';
 
 // @desc    Create a new order
 // @route   POST /api/orders
@@ -143,6 +144,77 @@ export const markOrderAsPaid = async (req, res) => {
 
     const updated = await order.save();
     res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+export const createManualOrder = async (req, res) => {
+  try {
+    const {
+      productId,
+      productName,
+      productImage,
+      finalPrice,
+      buyerName,
+      buyerPhone,
+      shippingAddress,
+      channel,
+      notes,
+    } = req.body;
+
+    // Find existing user by phone or create a manual guest
+    let buyer = await User.findOne({ 
+      $or: [
+        { phone: buyerPhone, phone: { $ne: null } },
+        { name: buyerName }
+      ]
+    });
+
+    if (!buyer) {
+      // Create a guest account — no strict validation needed
+      const guestEmail = `guest.${Date.now()}.${Math.random().toString(36).slice(2)}@manual.aeonix.com`;
+      buyer = new User({
+        name: buyerName,
+        email: guestEmail,
+        phone: buyerPhone || null,
+        password: `ManualSale${Date.now()}!`,  // meets min length
+        role: 'customer',
+      });
+      await buyer.save();
+    }
+
+    // Get product and deduct stock
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (product.stock < 1) return res.status(400).json({ message: 'Product out of stock' });
+
+    product.stock -= 1;
+    product.status = 'Sold';
+    await product.save();
+
+    // Create order
+    const order = await Order.create({
+      user: buyer._id,
+      items: [{
+        product: product._id,
+        name: productName || product.name,
+        image: productImage || product.images?.[0] || '',
+        price: Number(finalPrice),
+        quantity: 1,
+      }],
+      shippingAddress,
+      totalAmount: Number(finalPrice),
+      paymentMethod: 'Cash on Delivery',
+      isPaid: true,
+      paidAt: Date.now(),
+      status: 'Delivered',
+      deliveredAt: Date.now(),
+      channel: channel || 'Other',
+      notes: notes || '',
+      isManualSale: true,
+    });
+
+    res.status(201).json(order);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

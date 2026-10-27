@@ -7,15 +7,15 @@ import {
   updateProduct,
   deleteProduct,
 } from '../controllers/product.controller.js';
-import { protect, adminOnly } from '../middleware/auth.js';
+import { protect, adminOnly,optionalProtect } from '../middleware/auth.js';
 import { upload } from '../config/cloudinary.js';
 
 const router = express.Router();
 
 // Public
-router.get('/', getProducts);
-router.get('/featured', getFeaturedProducts);
-router.get('/:id', getProductById);
+router.get('/', optionalProtect, getProducts);
+router.get('/featured', optionalProtect, getFeaturedProducts);
+router.get('/:id', optionalProtect, getProductById);
 
 // Admin (upload.array handles multipart/form-data)
 router.post('/', protect, adminOnly, upload.array('images', 5), createProduct);

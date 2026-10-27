@@ -22,7 +22,12 @@ if (minPrice || maxPrice) {
   if (minPrice) filter.price.$gte = Number(minPrice);
   if (maxPrice) filter.price.$lte = Number(maxPrice);
 }
+// Add after existing filters
 
+
+if (req.user?.role !== 'admin') {
+  filter.status = 'In Stock';
+}
   const sortOptions = {
     newest: { createdAt: -1 },
     oldest: { createdAt: 1 },
@@ -55,8 +60,23 @@ if (minPrice || maxPrice) {
 // @access  Public
 export const getFeaturedProducts = async (req, res) => {
   try {
-    const products = await Product.find({ isFeatured: true }).limit(6);
+    const filter = { isFeatured: true };
+    if (req.user?.role !== 'admin') filter.status = 'In Stock';
+    const products = await Product.find(filter).limit(6);
     res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const getProductById = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (req.user?.role !== 'admin' && product.status !== 'In Stock') {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.json(product);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -65,15 +85,7 @@ export const getFeaturedProducts = async (req, res) => {
 // @desc    Get single product
 // @route   GET /api/products/:id
 // @access  Public
-export const getProductById = async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-    res.json(product);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+
 
 // ── Admin only ──────────────────────────────────────────────
 

@@ -55,6 +55,16 @@ const productSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    costPrice: {
+        type: Number,
+        default: 0,
+        min: 0,
+    },
+    status: {
+    type: String,
+    enum: ['In Stock', 'Servicing','Sold'],
+    default: 'In Stock',
+    },
 
 },
  { timestamps: true })
