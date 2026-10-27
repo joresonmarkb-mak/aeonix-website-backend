@@ -114,6 +114,12 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/subscribers', subscriberRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 
+
+
+app.get('/api/analytics/test', (req, res) => {
+  res.json({ message: 'Analytics route is reachable' });
+});
+
 // --- Error handling ---
 app.use((err, req, res, next) => {
   if (err.message?.startsWith('CORS blocked')) {
